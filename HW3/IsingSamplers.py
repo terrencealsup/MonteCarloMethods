@@ -58,7 +58,7 @@ def IsingSampler(chainLength, L, beta, sampler, method='random', getMagnetizatio
             else:
                 i = site[0]
                 j = site[1]
-                site = np.asarray([np.mod(L*i+j+1,L), np.remainder(L*i+j+1,L)])
+                site = [np.mod(np.floor_divide(L*i+j+1,L),L), np.mod(L*i+j+1,L)]
 
         # Determine which sampler to use.
         if sampler == 'Gibbs' or method != 'random':
@@ -76,14 +76,34 @@ def IsingSampler(chainLength, L, beta, sampler, method='random', getMagnetizatio
 
 
 
-L = 15
+
+L = 10
 beta = 1.
 chainLength = int(1E5)
 
-mags = IsingSampler(chainLength,L,beta,'Gibbs')[1]
+"""
+N = 100
+mags = np.zeros(N)
+for i in range(N):
+    mags[i] = magnetization(IsingSampler(chainLength,L,beta,'Gibbs','sweep',False))
 
+plt.figure()
+plt.hist(mags)
+"""
+
+
+mags = IsingSampler(chainLength,L,beta,'Gibbs',method='sweep')[1]
+
+
+
+fun = acor.function(mags, maxt=2000)
+
+
+tau = acor.acor(mags, maxlag=1000)[0]
+print(tau)
 
 
 plt.figure()
 plt.plot(fun)
+
 plt.show()
