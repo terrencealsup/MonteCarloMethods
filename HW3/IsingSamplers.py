@@ -11,6 +11,13 @@ Compute the magnetization of a vector of spins.
 def magnetization(spins):
     return np.sum(spins)
 
+def computeUnnormalizedPi(L, beta, spins):
+    sum = 0.
+    for i in range(L):
+        for j in range(L):
+            sum += spins[i,j]*(spins[np.mod(i+1,L),j] + spins[np.mod(i-1,L),j] + spins[i,np.mod(j+1,L)] + spins[i,np.mod(j-1,L)])
+    return np.exp(beta*sum)
+
 
 def GibbsUpdate(site, spins, beta, L):
     i = site[0]
@@ -75,11 +82,37 @@ def IsingSampler(chainLength, L, beta, sampler, method='random', getMagnetizatio
         return spins
 
 
+def Jarzynski(N, beta, L, M, resample=True):
+    samples = 2*np.random.randint(0,2,(M,L,L))-1 # M samples from pi_0
+    W = np.ones(M) # The weights of each sample.
+    w = np.zeros(M)
 
+    for k in range(N):
+        # Update the samples and their weights.
+        for j in range(M):
+            w[j] = computeUnnormalizedPi(L, beta/N, samples[j])
+            site = np.random.randint(0,L,2)
+            # Draw new samples.
+            samples[j] = GibbsUpdate(site, samples[j], beta*k/N, L)
+
+        # Update weights.
+        W = W*w/np.dot(W,w)
+
+    return [samples, W]
 
 L = 10
-beta = 1.
-chainLength = int(1E5)
+beta = 0.05
+chainLength = int(1E3)
+M =  100
+
+[X, W] = Jarzynski(chainLength, beta, L, M)
+
+mag = 0.
+for j in range(M):
+    mag += magnetization(X[j])*W[j]
+
+print(mag)
+
 
 """
 N = 100
@@ -91,7 +124,7 @@ plt.figure()
 plt.hist(mags)
 """
 
-
+"""
 mags = IsingSampler(chainLength,L,beta,'Gibbs',method='sweep')[1]
 
 
@@ -107,3 +140,4 @@ plt.figure()
 plt.plot(fun)
 
 plt.show()
+"""
