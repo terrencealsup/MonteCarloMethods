@@ -81,37 +81,81 @@ def IsingSampler(chainLength, L, beta, sampler, method='random', getMagnetizatio
     else:
         return spins
 
+def makeArray(samples, n):
+    N = np.int(np.sum(n))
+    X = np.zeros(samples.shape)
+    index = 0
+    for i in range(len(n)):
+        X[index:index+n[i]] = samples[i]
+        index += n[i]
+    return X
 
-def Jarzynski(N, beta, L, M, resample=True):
+
+"""
+Resampling to minimize the conditional variance and keep N fixed.
+"""
+def resample(samples, W):
+    N = len(samples)
+
+    n = np.zeros(N)
+
+    U = np.random.rand()
+    Wsum = np.cumsum(W)
+    for k in range(N):
+        Uj = (np.arange(1,N+1)-U)/N
+        if k == 0:
+            indicator = (Uj < Wsum[k]).astype(int)
+        else:
+            indicator = np.logical_and(Uj < Wsum[k], Uj >= Wsum[k-1]).astype(int)
+        n[k] = np.sum(indicator)
+
+    return makeArray(samples, n.astype(int))
+
+
+def Jarzynski(N, beta, L, M, nsteps = 100, resampling=False):
     samples = 2*np.random.randint(0,2,(M,L,L))-1 # M samples from pi_0
-    W = np.ones(M) # The weights of each sample.
+    W = np.ones(M)/N # The weights of each sample.
     w = np.zeros(M)
 
+    if resampling:
+        samples = resample(samples, W)
+
     for k in range(N):
+
+
+
         # Update the samples and their weights.
         for j in range(M):
             w[j] = computeUnnormalizedPi(L, beta/N, samples[j])
-            site = np.random.randint(0,L,2)
-            # Draw new samples.
-            samples[j] = GibbsUpdate(site, samples[j], beta*k/N, L)
+
+            for n in range(nsteps):
+                site = np.random.randint(0,L,2)
+                # Draw new samples.
+                samples[j] = GibbsUpdate(site, samples[j], beta*k/N, L)
 
         # Update weights.
         W = W*w/np.dot(W,w)
 
+        if resampling:
+            samples = resample(samples, W)
+
     return [samples, W]
+
 
 L = 10
 beta = 0.05
-chainLength = int(1E3)
-M =  100
+chainLength = int(2E2)
+N = 20
+M =  10000
 
-[X, W] = Jarzynski(chainLength, beta, L, M)
+[X, W] = Jarzynski(N, beta, L, M, resampling=True)
 
-mag = 0.
+dev = 0.
+
 for j in range(M):
-    mag += magnetization(X[j])*W[j]
+    dev += magnetization(X[j])**2
 
-print(mag)
+print(dev/M)
 
 
 """
