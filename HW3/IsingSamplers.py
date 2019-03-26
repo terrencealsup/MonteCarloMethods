@@ -57,7 +57,7 @@ def IsingSampler(chainLength, L, beta, sampler, method='random', getMagnetizatio
         mag[0] = magnetization(spins)
 
     for k in range(chainLength):
-        if method == 'random': # Randomly and independently select a site.
+        if method == 'random' or sampler != 'Gibbs': # Randomly and independently select a site.
             site = np.random.randint(0,L,2)
         else: # Sweep through the sites deterministically.
             if k == 0:
@@ -80,6 +80,7 @@ def IsingSampler(chainLength, L, beta, sampler, method='random', getMagnetizatio
         return [spins, mag]
     else:
         return spins
+
 
 def makeArray(samples, n):
     N = np.int(np.sum(n))
@@ -122,8 +123,6 @@ def Jarzynski(N, beta, L, M, nsteps = 100, resampling=False):
 
     for k in range(N):
 
-
-
         # Update the samples and their weights.
         for j in range(M):
             w[j] = computeUnnormalizedPi(L, beta/N, samples[j])
@@ -139,23 +138,64 @@ def Jarzynski(N, beta, L, M, nsteps = 100, resampling=False):
         if resampling:
             samples = resample(samples, W)
 
-    return [samples, W]
+    if resampling:
+        return [samples, np.ones(M)/M]
+    else:
+        return [samples, W]
 
-
+"""
 L = 10
-beta = 0.05
+beta = 1.
 chainLength = int(2E2)
-N = 20
-M =  10000
+N = 100
+M =  1000
 
-[X, W] = Jarzynski(N, beta, L, M, resampling=True)
+[X, W] = Jarzynski(N, beta, L, M, resampling=False)
 
-dev = 0.
+mag = np.zeros(M)
+mag2 = np.zeros(M)
 
 for j in range(M):
-    dev += magnetization(X[j])**2
+    m = magnetization(X[j])
+    mag[j] = m*W[j]
+    mag2[j] = m**2*W[j]
 
-print(dev/M)
+print(np.sum(mag))
+print(np.sum(mag2))
+"""
+
+
+"""
+###-------------------------------------------------------------
+###
+### Start the main script here.
+### Run all the parts for the assignment.
+###
+###-------------------------------------------------------------
+"""
+
+L = 10 # Fix the lattice size.
+
+Nsamples = 1000
+chainLength = int(1E4)
+beta = .05
+
+mags = np.zeros(Nsamples)
+
+for j in range(Nsamples):
+    mags[j] = magnetization(IsingSampler(chainLength, L, beta, sampler='Gibbs',getMagnetization=True)[0])/(L**2)
+
+plt.figure(1)
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+plt.hist(mags, bins=50, density=True)
+plt.xlabel('Average Magnetization $f(\sigma)/L^2$')
+plt.ylabel('Relative Frequency')
+plt.title('Histogram of the Average Magnetization for $\\beta = 0.05$, $L=10$')
+plt.show()
+
+
+
 
 
 """
