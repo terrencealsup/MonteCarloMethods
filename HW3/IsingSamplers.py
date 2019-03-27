@@ -1,6 +1,4 @@
 import numpy as np
-import acor
-from matplotlib import pyplot as plt
 
 """
 Compute the magnetization of a vector of spins.
@@ -174,6 +172,7 @@ print(np.sum(mag2))
 ###-------------------------------------------------------------
 """
 
+"""
 L = 10 # Fix the lattice size.
 
 Nsamples = 1000
@@ -194,7 +193,7 @@ plt.ylabel('Relative Frequency')
 plt.title('Histogram of the Average Magnetization for $\\beta = 0.05$, $L=10$')
 plt.show()
 
-
+"""
 
 
 
