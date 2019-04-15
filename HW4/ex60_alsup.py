@@ -9,7 +9,6 @@ from numpy import linalg
 def sampleXY(L, beta, h, Nsteps, metropolize=False, getMags=False):
     """
     Generate a sample from the XY model.
-    Un-metropolized.
 
     S = I
     xi ~ N(0, I)

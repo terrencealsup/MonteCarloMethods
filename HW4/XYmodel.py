@@ -58,14 +58,18 @@ class XYmodel:
 
         return (self.beta * sum)
 
-    def grad_log_density(self):
+    def grad_log_density(self, theta=None):
         """
         Return the gradient of log pi w.r.t. theta as a vector of size L.
         """
         grad = np.zeros(self.L)
         for i in range(self.L):
-            grad[i] = np.sin(self.theta[np.mod(i-1, self.L)] - self.theta[i])
-            grad[i] += np.sin(self.theta[np.mod(i+1, self.L)] - self.theta[i])
+            if theta is not None:
+                grad[i] = np.sin(theta[np.mod(i-1, self.L)] - theta[i])
+                grad[i] += np.sin(theta[np.mod(i+1, self.L)] - theta[i])
+            else:
+                grad[i] = np.sin(self.theta[np.mod(i-1, self.L)] - self.theta[i])
+                grad[i] += np.sin(self.theta[np.mod(i+1, self.L)] - self.theta[i])
 
         return (self.beta * grad)
 
