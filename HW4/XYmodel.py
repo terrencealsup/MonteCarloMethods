@@ -47,14 +47,18 @@ class XYmodel:
         mag = self.magnetization()
         return mag[0]/np.sqrt(mag[0]**2 + mag[1]**2)
 
-    def log_density(self):
+    def log_density(self, theta=None):
         """
         Compute the log of the density up to its normalizing constant.
         beta sum_{i <-> j} cos(theta_i - theta_j)
         """
+
+        if theta is None:
+            theta = self.theta
+
         sum = 0.
         for i in range(self.L):
-            sum += np.cos(self.theta[np.mod(i+1, self.L)] - self.theta[i])
+            sum += np.cos(theta[np.mod(i+1, self.L)] - theta[i])
 
         return (self.beta * sum)
 
