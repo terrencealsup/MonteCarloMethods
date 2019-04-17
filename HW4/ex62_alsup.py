@@ -131,6 +131,35 @@ def test_sampler():
     plt.plot(spins[:,0], spins[:,1], 'bo')
     plt.plot(circle[0], circle[1], 'k:')
 
+def test_IAC():
+    """
+    Test the un-metropolized XY model sampler and get the ACF and IAC.
 
-test_sampler()
+    Nsteps is the number of MCMC steps.
+    """
+    L = 25              # Lattice size
+    beta = 1.0         # Inverse temperature
+    h = 1E-1            # Step size
+    gamma = 0.1         # Friction coefficient
+    Nsteps = int(1E5)   # Number of MCMC steps
+
+    [xy, mags] =  underdampedLangevin(L, beta, h, gamma, Nsteps, getMags=True)
+
+    acf = acor.function(mags)
+
+    # Time for the correlation to first reach 0 (within the tolerance).
+    cor_time = np.where(acf <= 1E-6)[0][0]
+
+    plt.figure(3)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.xlabel('Lag')
+    plt.ylabel('Autocorrelation')
+    plt.title('ACF of the Un-Metropolized Scheme')
+    plt.plot(np.arange(cor_time+1), acf[:cor_time+1], 'b-')
+
+    tau = acor.acor(mags, maxlag = cor_time)[0]
+    print("\nIAC = {:.1f}\n".format(tau))
+
+test_IAC()
 plt.show()
