@@ -1,3 +1,11 @@
+"""
+File: ex60_alsup.py
+Author: Terrence Alsup
+Date: April 17, 2019
+Monte Carlo Methods HW 4
+
+
+"""
 import XYmodel
 import numpy as np
 import acor
