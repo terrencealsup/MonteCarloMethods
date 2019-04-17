@@ -112,15 +112,16 @@ def test_sampler():
 
 
 
-def test_IAC(Nsteps):
+def test_IAC():
     """
     Test the un-metropolized XY model sampler and get the ACF and IAC.
 
     Nsteps is the number of MCMC steps.
     """
     L = 25              # Lattice size
-    beta = 1E-2         # Inverse temperature
-    h = 1E-2            # Step size
+    beta = 1.0          # Inverse temperature
+    h = 1E-1            # Step size
+    Nsteps = int(1E4)   # Number of MCMC steps
 
     [xy, mags] = sampleXY(L, beta, h, Nsteps, getMags=True)
 
@@ -141,5 +142,5 @@ def test_IAC(Nsteps):
     print("\nIAC = {:.1f}\n".format(tau))
 
 
-
+test_IAC()
 plt.show()
