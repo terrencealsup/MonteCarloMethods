@@ -1,9 +1,31 @@
+"""
+File: ex61_alsup.py
+Author: Terrence Alsup
+Date: April 17, 2019
+Monte Carlo Methods HW 4
+
+Sample from the XY model using a metropolized and un-metropolized Hybrid Monte
+Carlo.  Plot 2 samples at different temperatures.  Compute the IACs for
+the cosine of the angle of the magnetization vector.
+Does Exercise 61 in the notes.
+"""
 import XYmodel
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy import linalg
 import acor
 
+def logp_acc(xy, Xh, Xt, Yh, Yt):
+    """
+    Compute the logarithm of the acceptance probability.
+
+    [Xh, Xt] is the current location of the chain.
+    [Yh, Yt] is the new proposal.
+    """
+    log_piy = -xy.log_density(Yh) + 0.5*linalg.norm(Yt)**2
+    log_pix = -xy.log_density(Xh) + 0.5*linalg.norm(Xt)**2
+
+    return log_piy - log_pix
 
 def velocityVerlet(XY, yh, yt, h, n):
     """
@@ -48,10 +70,7 @@ def HybridMC(L, beta, h, n, Nsteps, metropolize=False, getMags=False):
 
         if metropolize:
             # Compute the acceptance probability.
-            temp = -xy.grad_log_density(yh) + 0.5 * linalg.norm(yt)
-            temp -= (-xy.grad_log_density() + 0.5 * linalg.norm(yt_old))
-            p_acc = np.exp(temp)
-            if np.random.rand() < p_acc:
+            if np.log(np.random.rand()) < logp_acc(xy, xy.theta, yt_old, yh, yt):
                 # Note that we do not need to reset the momentum variables
                 # because we sample them at each step independently.
                 xy.set(yh)
@@ -81,8 +100,8 @@ def test_sampler():
     Test the un-metropolized XY model sampler.
     """
     L = 25              # Lattice size
-    beta = 1.0          # Inverse temperature
-    h = 1E-1           # Step size
+    beta = 0.1          # Inverse temperature
+    h = 1E-2           # Step size
     n = 10              # Number of velocity verlet steps.
     Nsteps = int(1E4)   # Number of MCMC steps
 
@@ -116,12 +135,20 @@ def test_IAC():
     Nsteps is the number of MCMC steps.
     """
     L = 25              # Lattice size
-    beta = 1.0          # Inverse temperature
-    h = 1E-2           # Step size
-    n = 10              # Number of velocity verlet steps.
-    Nsteps = int(1E3)   # Number of MCMC steps
+    beta = 0.1          # Inverse temperature
+    h = 0.05           # Step size
+    n = 5              # Number of velocity verlet steps.
+    Nsteps = int(1E4)   # Number of MCMC steps
+    metropolize = False # Do metropolize or not.
 
-    [xy, mags] = HybridMC(L, beta, h, n, Nsteps, getMags=True)
+    if metropolize:
+        [xy, rej_rate, mags] = HybridMC(L, beta, h, n, Nsteps, True, True)
+        print("\nMetropolized Scheme")
+        print("\nRejection Rate = {:.2f}%".format(100*rej_rate))
+
+    else:
+        print("\nUn-Metropolized Scheme")
+        [xy, mags] = HybridMC(L, beta, h, n, Nsteps, False, True)
 
     acf = acor.function(mags)
 
@@ -133,7 +160,10 @@ def test_IAC():
     plt.rc('font', family='serif')
     plt.xlabel('Lag')
     plt.ylabel('Autocorrelation')
-    plt.title('ACF of the Un-Metropolized Scheme')
+    if metropolize:
+        plt.title('ACF of the Metropolized Scheme')
+    else:
+        plt.title('ACF of the Un-Metropolized Scheme')
     plt.plot(np.arange(cor_time+1), acf[:cor_time+1], 'b-')
 
     tau = acor.acor(mags, maxlag = cor_time)[0]

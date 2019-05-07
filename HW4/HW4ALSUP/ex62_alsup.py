@@ -1,3 +1,14 @@
+"""
+File: ex62_alsup.py
+Author: Terrence Alsup
+Date: April 17, 2019
+Monte Carlo Methods HW 4
+
+Sample from the XY model using a metropolized and un-metropolized underdamped
+Langevin sampler.  Plot 2 samples at different temperatures.  Compute the IACs
+for the cosine of the angle of the magnetization vector.
+Does Exercise 62 in the notes.
+"""
 import numpy as np
 from numpy import linalg
 import XYmodel
@@ -100,7 +111,7 @@ def test_sampler():
     Test the un-metropolized XY model sampler.
     """
     L = 25              # Lattice size
-    beta = 10.0         # Inverse temperature
+    beta = 1.0         # Inverse temperature
     h = 1E-1            # Step size
     gamma = 0.1         # Friction coefficient
     Nsteps = int(1E4)   # Number of MCMC steps
@@ -138,12 +149,21 @@ def test_IAC():
     Nsteps is the number of MCMC steps.
     """
     L = 25              # Lattice size
-    beta = 1.0         # Inverse temperature
+    beta = 0.1         # Inverse temperature
     h = 1E-1            # Step size
-    gamma = 0.1         # Friction coefficient
-    Nsteps = int(1E5)   # Number of MCMC steps
+    gamma = 5E2         # Friction coefficient
+    Nsteps = int(1E4)   # Number of MCMC steps
+    metropolize = False # Do metropolize or not.
 
-    [xy, mags] =  underdampedLangevin(L, beta, h, gamma, Nsteps, getMags=True)
+    if metropolize:
+        [xy, rej_rate, mags] = underdampedLangevin(L, beta, h, gamma, Nsteps, True, True)
+        print("\nMetropolized Scheme")
+        print("\nRejection Rate = {:.2f}%".format(100*rej_rate))
+
+    else:
+        print("\nUn-Metropolized Scheme")
+        [xy, mags] = underdampedLangevin(L, beta, h, gamma, Nsteps, False, True)
+
 
     acf = acor.function(mags)
 
@@ -155,7 +175,10 @@ def test_IAC():
     plt.rc('font', family='serif')
     plt.xlabel('Lag')
     plt.ylabel('Autocorrelation')
-    plt.title('ACF of the Un-Metropolized Scheme')
+    if metropolize:
+        plt.title('ACF of the Metropolized Scheme')
+    else:
+        plt.title('ACF of the Un-Metropolized Scheme')
     plt.plot(np.arange(cor_time+1), acf[:cor_time+1], 'b-')
 
     tau = acor.acor(mags, maxlag = cor_time)[0]

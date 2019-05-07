@@ -4,7 +4,10 @@ Author: Terrence Alsup
 Date: April 17, 2019
 Monte Carlo Methods HW 4
 
-
+Sample from the XY model using a metropolized and un-metropolized stochastic
+thermostat.  Plot 2 samples at different temperatures.  Compute the IACs for
+the cosine of the angle of the magnetization vector.  Change the size of L.
+Does Exercise 60 in the notes.
 """
 import XYmodel
 import numpy as np
@@ -13,13 +16,25 @@ from matplotlib import pyplot as plt
 from numpy import linalg
 
 
+def log_q(xy, x, y, h):
+    """
+    Compute the logarithm of the proposal log q(y|x).
+    """
+    return -linalg.norm(y - x - h*xy.grad_log_density(x))/(4*h)
+
+def log_pacc(xy, x, y, h):
+    """
+    Compute the logarithm of the acceptance probability.
+    """
+    logp = log_q(xy, y, x, h)
+    logp += xy.log_density(y)
+    logp -= log_q(xy, x, y, h)
+    logp -= xy.log_density(x)
+    return logp
 
 def sampleXY(L, beta, h, Nsteps, metropolize=False, getMags=False):
     """
     Generate a sample from the XY model.
-
-    S = I
-    xi ~ N(0, I)
     """
     xy = XYmodel.XYmodel(L, beta)
 
@@ -32,21 +47,14 @@ def sampleXY(L, beta, h, Nsteps, metropolize=False, getMags=False):
 
     for k in range(1,Nsteps+1):
 
-        hgradLogPi = h * xy.grad_log_density() # Drift term.
-        dX = hgradLogPi + (np.sqrt(h) * np.random.randn(L))
+        dX =  h * xy.grad_log_density() + (np.sqrt(h) * np.random.randn(L))
         Y = dX + xy.theta
 
         if metropolize:
-            qxy = np.exp(linalg.norm(-dX - hgradLogPi)**2/(4*h))    # q(x|y)
-            qyx = np.exp(linalg.norm( dX - hgradLogPi)**2/(4*h))    # q(y|x)
-            X = xy.theta # The current value of theta.
-            pix = xy.density_unnormalized()
-            xy.set(Y) # Go ahead and set the values of theta.
-            piy = xy.density_unnormalized()
-            p_acc = (qxy * piy)/(qyx * pix) # Acceptance probability.
-            # If rejected, reset to the old value.
-            if np.random.rand() > p_acc:
-                xy.set(X)
+            # Compute acceptance probability.
+            if np.log(np.random.rand()) < log_pacc(xy, xy.theta, Y, h):
+                xy.set(Y)
+            else:
                 rejected += 1
         else:
             xy.set(Y)
@@ -72,7 +80,7 @@ def test_sampler():
     """
     L = 25              # Lattice size
     beta = 10.0         # Inverse temperature
-    h = 1E-3            # Step size
+    h = 1E-2            # Step size
     Nsteps = int(1E4)   # Number of MCMC steps
 
     # First plot the spins on the circle for large beta.
@@ -122,16 +130,24 @@ def test_sampler():
 
 def test_IAC():
     """
-    Test the un-metropolized XY model sampler and get the ACF and IAC.
+    Test the XY model sampler and get the ACF and IAC.
 
     Nsteps is the number of MCMC steps.
     """
     L = 25              # Lattice size
-    beta = 1.0          # Inverse temperature
-    h = 1E-1            # Step size
+    beta = 0.1          # Inverse temperature
+    h = 0.5             # Step size
     Nsteps = int(1E4)   # Number of MCMC steps
+    metropolize = True  # Do metropolize or not.
 
-    [xy, mags] = sampleXY(L, beta, h, Nsteps, getMags=True)
+    if metropolize:
+        [xy, rej_rate, mags] = sampleXY(L, beta, h, Nsteps, True, True)
+        print("\nMetropolized Scheme")
+        print("\nRejection Rate = {:.2f}%".format(100*rej_rate))
+
+    else:
+        print("\nUn-Metropolized Scheme")
+        [xy, mags] = sampleXY(L, beta, h, Nsteps, False, True)
 
     acf = acor.function(mags)
 
@@ -143,12 +159,15 @@ def test_IAC():
     plt.rc('font', family='serif')
     plt.xlabel('Lag')
     plt.ylabel('Autocorrelation')
-    plt.title('ACF of the Un-Metropolized Scheme')
+    if metropolize:
+        plt.title('ACF of the Metropolized Scheme')
+    else:
+        plt.title('ACF of the Un-Metropolized Scheme')
     plt.plot(np.arange(cor_time+1), acf[:cor_time+1], 'b-')
 
     tau = acor.acor(mags, maxlag = cor_time)[0]
     print("\nIAC = {:.1f}\n".format(tau))
 
-
+test_sampler()
 test_IAC()
 plt.show()
