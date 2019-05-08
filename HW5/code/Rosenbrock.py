@@ -56,10 +56,16 @@ def divS(x):
     d = len(x) # Get the dimension of x.
     divS = np.zeros(d)
     dx = 1e-6 # Step used for finite differences.
-    for i in range(d):
-        for j in range(d):
-            Spdx = linalg.inv(D2_log_pi(x + dx*v))
-            Smdx = linalg.inv(D2_log_pi(x - dx*v))
+    for j in range(d):
+        e = np.zeros(d)
+        e[j] = 1
+        Spdx = linalg.inv(D2_log_pi(x + dx*e))
+        Smdx = linalg.inv(D2_log_pi(x - dx*e))
+
+        # Second-order centered difference for first derivative D_j S.
+        divS += (Spdx[] - Smdx[]) / (2 * dx)
+
+    return divS
 
 
 
