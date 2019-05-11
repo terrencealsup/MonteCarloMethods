@@ -3,15 +3,15 @@ from numpy import linalg
 from matplotlib import pyplot as plt
 import Rosenbrock
 
-def OverdampedSampler(x0, h, N, S_type='id'):
+def UnderdampedSampler(x0, h, N, J_type='id'):
     # Functions to evaluate the density, grad log density, and Hessian of the
     # minus log density.
     pi = Rosenbrock.pi
     log_pi = Rosenbrock.log_pi
     grad_log_pi = Rosenbrock.grad_log_pi
     D2_log_pi = Rosenbrock.D2_log_pi
-    S = Rosenbrock.S
-    divS = Rosenbrock.divS
+    J = Rosenbrock.S
+    divJ = Rosenbrock.divS
 
     MCMC_chain = np.zeros((N+1, len(x0)))
     MCMC_chain[0,:] = x0
@@ -68,7 +68,7 @@ def metropolize(x, y, h, pi, log_pi, grad_log_pi, S, divS, S_type):
         return [x, False]
 
 def plot_trajectory(x0, h, N, S_type='id'):
-    [chain, accept] = OverdampedSampler(x0, h, N, S_type)
+    [chain, accept] = UnderdampedSampler(x0, h, N, S_type)
 
     print("\nAcceptance Rate = {:0.1f}%.\n".format(100*accept))
 
@@ -87,7 +87,7 @@ def plot_trajectory(x0, h, N, S_type='id'):
     plt.plot(chain[:,0], chain[:,1], 'r')
     plt.xlabel('$x_1$')
     plt.ylabel('$x_2$')
-    plt.title('Overdamped Langevin Trajectory')
+    plt.title('Underdamped Langevin Trajectory')
     plt.show()
 
 plot_trajectory([0,2], 0.1, 1000, S_type = 'Hessian')

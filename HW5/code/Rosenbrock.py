@@ -39,15 +39,18 @@ def D2_log_pi(x):
     H22 = -10
     return -np.asarray([[H11, H12], [H12, H22]])
 
-def sqrtS(x):
+def S(x):
     """
     Computes sqrt(S) = sigma, where S = (-D^2 log pi)^{-1}
     Positive square-root.
+    Also returns the absolute value of S = P|D|P^T
     """
     Sinv = D2_log_pi(x)
     evals, P = linalg.eig(Sinv)
     sqrtD = np.diag(np.sqrt(np.abs(1/evals)))
-    return P @ sqrt(D)
+    sigma = P @ sqrtD
+    absS  = sigma @ sigma.transpose()
+    return [absS, P @ sqrtD]
 
 def divS(x):
     """
@@ -59,11 +62,11 @@ def divS(x):
     for j in range(d):
         e = np.zeros(d)
         e[j] = 1
-        Spdx = linalg.inv(D2_log_pi(x + dx*e))
-        Smdx = linalg.inv(D2_log_pi(x - dx*e))
+        Spdx = S(x + dx*e)[0]
+        Smdx = S(x - dx*e)[0]
 
         # Second-order centered difference for first derivative D_j S.
-        divS += (Spdx[] - Smdx[]) / (2 * dx)
+        divS += (Spdx[:,j] - Smdx[:,j]) / (2 * dx)
 
     return divS
 
